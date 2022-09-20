@@ -240,6 +240,7 @@ class JITFunction(KernelInterface):
 
         src = f"""
 def {self.fn.__name__}({', '.join(self.arg_names)}, grid, num_warps=4, num_stages=3, extern_libs=None, stream=None, warmup=False):
+    print(triton.JITFunction.cache_hook)
     sig_key =  {sig_keys},
     constexpr_key = {f'{constexpr_keys},' if len(constexpr_keys) > 0 else tuple()}
     spec_key = {f'{spec_keys},' if len(spec_keys) > 0 else tuple()}
@@ -327,6 +328,7 @@ def {self.fn.__name__}({', '.join(self.arg_names)}, grid, num_warps=4, num_stage
         self.__module__ = fn.__module__
 
     @property
+    @functools.lru_cache()
     def cache_key(self):
         # TODO : hash should be attribute of `self`
         if self.hash is None:
@@ -361,6 +363,7 @@ def {self.fn.__name__}({', '.join(self.arg_names)}, grid, num_warps=4, num_stage
         #   to be reinitialized
         if name == 'src':
             self.hash = None
+            JITFunction.cache_key.fget.cache_clear()
 
     def __repr__(self):
         return f"JITFunction({self.module}:{self.fn.__name__})"
